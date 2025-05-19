@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lotteria Asilo Mergozzo</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"></script>
+</head>
+<body class="bg-yellow-50">
+  <div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-4 text-center">Lotteria Asilo Mergozzo</h1>
+    
+    <div id="countdown" class="text-center text-xl font-semibold text-red-600 mb-4"></div>
+    <div id="grid" class="grid grid-cols-10 gap-2 mb-4"></div>
+    
+    <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-4">
+      <input type="text" id="childName" placeholder="Nome bambino/a" class="border p-2 rounded w-64">
+      <button onclick="submitSelection()" class="bg-blue-500 text-white px-4 py-2 rounded">Conferma scelta</button>
+    </div>
+
+    <div id="admin" class="mt-8 text-center">
+      <h2 class="font-bold mt-6 mb-2">Area Admin</h2>
+      <input type="password" id="adminPass" placeholder="Password admin" class="border p-2 rounded">
+      <button onclick="resetGrid()" class="bg-red-500 text-white px-4 py-2 rounded ml-2">Resetta Tabellone</button>
+      <button onclick="window.print()" class="bg-green-500 text-white px-4 py-2 rounded ml-2">Stampa Tabellone</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAHpuw1hUg2x0U-ms8op-xw-bqUFjlU1r8",
+      authDomain: "lotteria-asilo.firebaseapp.com",
+      databaseURL: "https://lotteria-asilo-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "lotteria-asilo",
+      storageBucket: "lotteria-asilo.appspot.com",
+      messagingSenderId: "666992323953",
+      appId: "1:666992323953:web:e03ddbaeffa4991d15dad0",
+      measurementId: "G-PVZ1ZR0S28"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const gridEl = document.getElementById("grid");
+    const childInput = document.getElementById("childName");
+    const adminPassInput = document.getElementById("adminPass");
+
+    let selectedNumber = null;
+    const ADMIN_PASSWORD = "mergozzo2025";
+
+    function createGrid(data = {}) {
+      gridEl.innerHTML = "";
+      for (let i = 1; i <= 90; i++) {
+        const btn = document.createElement("button");
+        btn.className = "p-2 border rounded text-center";
+        btn.textContent = i;
+
+        if (data[i]) {
+          btn.classList.add("bg-gray-400", "text-white", "cursor-not-allowed");
+          btn.disabled = true;
+          btn.title = data[i];
+          btn.textContent = `${i}\n(${data[i]})`;
+        } else {
+          btn.classList.add("bg-white", "hover:bg-blue-100");
+          btn.onclick = () => {
+            selectedNumber = i;
+            document.querySelectorAll("#grid button").forEach(b => b.classList.remove("bg-blue-300"));
+            btn.classList.add("bg-blue-300");
+          };
+        }
+
+        gridEl.appendChild(btn);
+      }
+    }
+
+    const gridRef = ref(db, "lotteria/numeri");
+    onValue(gridRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      createGrid(data);
+    });
+
+    window.submitSelection = function () {
+      if (!selectedNumber || !childInput.value.trim()) {
+        alert("Seleziona un numero e inserisci il nome.");
+        return;
+      }
+
+      const name = childInput.value.trim();
+      const numberRef = ref(db, `lotteria/numeri/${selectedNumber}`);
+
+      set(numberRef, name).then(() => {
+        selectedNumber = null;
+        childInput.value = "";
+      });
+    };
+
+    window.resetGrid = function () {
+      if (adminPassInput.value !== ADMIN_PASSWORD) {
+        alert("Password admin errata.");
+        return;
+      }
+
+      if (confirm("Sei sicuro di voler resettare il tabellone?")) {
+        remove(ref(db, "lotteria/numeri"));
+      }
+    };
+
+    function startCountdown() {
+      const countdownEl = document.getElementById("countdown");
+      const targetDate = new Date("2025-05-28T23:59:59").getTime();
+
+      const update = () => {
+        const now = new Date().getTime();
+        const diff = targetDate - now;
+
+        if (diff <= 0) {
+          countdownEl.textContent = "La lotteria è conclusa!";
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        countdownEl.textContent = `Termina in: ${days}g ${hours}h ${minutes}m ${seconds}s`;
+      };
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    startCountdown();
+  </script>
+</body>
+</html>
