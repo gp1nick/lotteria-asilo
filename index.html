@@ -23,6 +23,19 @@
     font-weight: bold;
     color: #663300;
   }
+  #userInfo {
+    max-width: 600px;
+    margin: 10px auto;
+    text-align: center;
+  }
+  #userInfo input {
+    font-size: 1rem;
+    padding: 6px 10px;
+    margin: 0 8px 10px 8px;
+    border-radius: 8px;
+    border: 1.5px solid #cc7a00;
+    width: 140px;
+  }
   #board {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
@@ -51,9 +64,9 @@
     cursor: not-allowed;
     color: #666;
   }
-  #confirmBtn {
-    display: block;
-    margin: 20px auto;
+  #confirmBtn, #adminBtn, #unlockBtn {
+    display: inline-block;
+    margin: 10px 10px 20px 10px;
     background: #cc7a00;
     color: white;
     border: none;
@@ -63,7 +76,9 @@
     cursor: pointer;
     transition: background-color 0.3s;
   }
-  #confirmBtn:hover:not(:disabled) {
+  #confirmBtn:hover:not(:disabled),
+  #adminBtn:hover,
+  #unlockBtn:hover {
     background: #b36800;
   }
   #confirmBtn:disabled {
@@ -75,6 +90,14 @@
     margin-top: 10px;
     font-style: italic;
     color: #cc7a00;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #adminArea {
+    max-width: 600px;
+    margin: 0 auto 30px auto;
+    text-align: center;
   }
 </style>
 
@@ -91,9 +114,23 @@
   Per ogni numero sono richiesti 2,50€ o un'offerta superiore da lasciare in busta chiusa nell'armadietto di Arianna F. ;) Grazie mille del tuo aiuto ;)
 </header>
 
+<div id="userInfo">
+  <input type="text" id="nome" placeholder="Nome" autocomplete="off" />
+  <input type="text" id="cognome" placeholder="Cognome" autocomplete="off" />
+</div>
+
 <div id="board"></div>
-<button id="confirmBtn">Conferma Scelta</button>
+
+<div style="text-align:center;">
+  <button id="confirmBtn" disabled>Conferma Scelta</button>
+  <button id="adminBtn" style="display:none;">Area Admin</button>
+</div>
+
 <div id="message"></div>
+
+<div id="adminArea" style="display:none;">
+  <button id="unlockBtn">Sblocca Scelte</button>
+</div>
 
 <script>
   // --- CONFIGURAZIONE FIREBASE ---
@@ -111,18 +148,24 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Stato utente simulato (qui potresti usare autenticazione per admin)
-  const isAdmin = false; // Cambia a true se sei admin
+  // Cambia qui se sei admin (per ora semplice flag)
+  const isAdmin = false; 
 
   const board = document.getElementById('board');
   const confirmBtn = document.getElementById('confirmBtn');
+  const adminBtn = document.getElementById('adminBtn');
+  const unlockBtn = document.getElementById('unlockBtn');
   const message = document.getElementById('message');
+  const nomeInput = document.getElementById('nome');
+  const cognomeInput = document.getElementById('cognome');
+  const adminArea = document.getElementById('adminArea');
 
-  // Variabili per gestire lo stato
   let selectedNumbers = [];
   let confirmed = false;
+  let userName = '';
+  let userSurname = '';
 
-  // Funzione per creare la griglia numeri da 1 a 90
+  // Crea la griglia numeri
   function createBoard() {
     for (let i = 1; i <= 90; i++) {
       const numEl = document.createElement('div');
@@ -130,14 +173,13 @@
       numEl.classList.add('number');
       numEl.dataset.num = i;
       numEl.addEventListener('click', () => {
-        if (confirmed && !isAdmin) return; // blocca modifiche se confermato e non admin
+        if (confirmed && !isAdmin) return;
         toggleNumber(i, numEl);
       });
       board.appendChild(numEl);
     }
   }
 
-  // Toggle selezione numero
   function toggleNumber(num, element) {
     const idx = selectedNumbers.indexOf(num);
     if (idx === -1) {
@@ -147,36 +189,76 @@
       selectedNumbers.splice(idx, 1);
       element.classList.remove('selected');
     }
+    updateConfirmBtn();
     message.textContent = '';
   }
 
-  // Salva dati su Firebase
-  function saveSelection() {
-    db.ref('selections').set({
-      numbers: selectedNumbers,
-      confirmed: true
-    });
+  function updateConfirmBtn() {
+    const nomeVal = nomeInput.value.trim();
+    const cognomeVal = cognomeInput.value.trim();
+    const canConfirm = selectedNumbers.length > 0 && nomeVal !== '' && cognomeVal !== '' && !confirmed;
+    confirmBtn.disabled = !canConfirm;
   }
 
-  // Riceve dati da Firebase e aggiorna UI
+  nomeInput.addEventListener('input', updateConfirmBtn);
+  cognomeInput.addEventListener('input', updateConfirmBtn);
+
+  // Salva su Firebase
+  function saveSelection() {
+    userName = nomeInput.value.trim();
+    userSurname = cognomeInput.value.trim();
+    if (!userName || !userSurname) {
+      message.textContent = "Inserisci nome e cognome per confermare.";
+      return;
+    }
+    const dataToSave = {
+      numbers: selectedNumbers,
+      confirmed: true,
+      nome: userName,
+      cognome: userSurname,
+      timestamp: Date.now()
+    };
+    db.ref('selections').set(dataToSave);
+  }
+
   function listenSelection() {
     db.ref('selections').on('value', (snapshot) => {
       const data = snapshot.val();
       if (data) {
         confirmed = data.confirmed;
         selectedNumbers = data.numbers || [];
+        userName = data.nome || '';
+        userSurname = data.cognome || '';
         updateBoard();
         updateConfirmBtn();
+
         if (confirmed && !isAdmin) {
-          message.textContent = "La scelta è stata confermata e non si può più modificare.";
+          message.textContent = `Scelta confermata da ${userName} ${userSurname}. Non è più possibile modificare.`;
+          nomeInput.disabled = true;
+          cognomeInput.disabled = true;
+          confirmBtn.disabled = true;
         } else {
-          message.textContent = "";
+          message.textContent = '';
+          nomeInput.disabled = false;
+          cognomeInput.disabled = false;
+          confirmBtn.disabled = false;
         }
+      } else {
+        // Nessuna selezione ancora fatta
+        confirmed = false;
+        selectedNumbers = [];
+        userName = '';
+        userSurname = '';
+        updateBoard();
+        updateConfirmBtn();
+        message.textContent = '';
+        nomeInput.disabled = false;
+        cognomeInput.disabled = false;
+        confirmBtn.disabled = true;
       }
     });
   }
 
-  // Aggiorna la griglia in base a selectedNumbers e confirmed
   function updateBoard() {
     document.querySelectorAll('.number').forEach(el => {
       const num = Number(el.dataset.num);
@@ -190,26 +272,42 @@
     });
   }
 
-  // Aggiorna il bottone conferma
-  function updateConfirmBtn() {
-    if (confirmed) {
-      confirmBtn.disabled = true;
-    } else {
-      confirmBtn.disabled = selectedNumbers.length === 0;
-    }
-  }
-
   confirmBtn.addEventListener('click', () => {
     if (selectedNumbers.length === 0) {
       message.textContent = "Seleziona almeno un numero prima di confermare.";
       return;
     }
+    if (!nomeInput.value.trim() || !cognomeInput.value.trim()) {
+      message.textContent = "Inserisci nome e cognome per confermare.";
+      return;
+    }
     saveSelection();
+  });
+
+  // Admin area
+  if (isAdmin) {
+    adminBtn.style.display = 'inline-block';
+    adminArea.style.display = 'block';
+  }
+
+  adminBtn.addEventListener('click', () => {
+    alert('Zona admin da implementare o aprire altra pagina.');
+  });
+
+  unlockBtn.addEventListener('click', () => {
+    if (confirm('Sei sicuro di voler sbloccare la selezione? Tutte le scelte attuali saranno cancellate.')) {
+      db.ref('selections').remove();
+      message.textContent = "Scelte sbloccate. I genitori possono scegliere di nuovo.";
+      nomeInput.disabled = false;
+      cognomeInput.disabled = false;
+      confirmBtn.disabled = true;
+    }
   });
 
   // Avvio
   createBoard();
   listenSelection();
+  updateConfirmBtn();
 
 </script>
 
