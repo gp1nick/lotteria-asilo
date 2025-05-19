@@ -4,312 +4,355 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Lotteria Asilo Mergozzo</title>
-
-<!-- Google Fonts simpatici e leggibili -->
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet" />
-
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+
   body {
-    font-family: 'Baloo 2', cursive, Arial, sans-serif;
-    margin: 0; padding: 0;
-    background: #fffbe6;
-    color: #333;
+    font-family: 'Comic Neue', cursive, sans-serif;
+    margin: 0; padding: 0; background: #f9f6f2;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
+
   header {
-    background: #f7d488;
-    padding: 15px 20px;
+    background: #ffcc00;
+    width: 100%; padding: 15px;
     text-align: center;
-    font-size: 1.3rem;
+    font-size: 1.2em;
     font-weight: bold;
-    color: #663300;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    flex-shrink: 0;
   }
-  #userInfo {
-    max-width: 600px;
-    margin: 10px auto;
-    text-align: center;
-  }
-  #userInfo input {
-    font-size: 1rem;
-    padding: 6px 10px;
-    margin: 0 8px 10px 8px;
+
+  #form-area {
+    width: 100%;
+    max-width: 700px;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 10px;
     border-radius: 8px;
-    border: 1.5px solid #cc7a00;
-    width: 140px;
   }
+
+  #form-area input[type="text"] {
+    font-size: 1em;
+    padding: 8px;
+    margin-right: 10px;
+    width: 60%;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+  }
+
+  #form-area button {
+    font-size: 1em;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    background-color: #ff9900;
+    color: white;
+    transition: background-color 0.3s;
+  }
+  #form-area button:hover {
+    background-color: #e68a00;
+  }
+
   #board {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    max-width: 600px;
-    margin: 20px auto;
-    gap: 8px;
+    grid-gap: 6px;
+    width: 100vw;
+    flex-grow: 1;
+    max-height: calc(100vh - 190px);
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
   }
-  .number {
+
+  .cell {
     background: #eee;
-    border-radius: 8px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
     text-align: center;
-    padding: 15px 0;
-    font-size: 1.1rem;
+    font-size: calc(1.5vw + 1.5vh);
     cursor: pointer;
     user-select: none;
-    border: 2px solid transparent;
-    transition: all 0.3s;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 8vh;
+    transition: background-color 0.3s, border-color 0.3s;
   }
-  .number.selected {
-    background: #ffb347;
-    border-color: #cc7a00;
-    color: white;
+
+  .cell.selected {
+    background-color: #ffd966;
+    border-color: #ff9900;
+    font-weight: bold;
   }
-  .number.disabled {
-    background: #ccc;
+
+  .cell.taken {
+    background-color: #bbb;
+    border-color: #666;
+    color: #333;
     cursor: not-allowed;
-    color: #666;
   }
-  #confirmBtn, #adminBtn, #unlockBtn {
-    display: inline-block;
-    margin: 10px 10px 20px 10px;
-    background: #cc7a00;
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    font-size: 1.2rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  #confirmBtn:hover:not(:disabled),
-  #adminBtn:hover,
-  #unlockBtn:hover {
-    background: #b36800;
-  }
-  #confirmBtn:disabled {
-    background: #999;
-    cursor: default;
-  }
-  #message {
+
+  .child-name {
+    position: absolute;
+    bottom: 2px;
+    font-size: 0.7em;
+    color: #333;
+    width: 90%;
+    overflow-wrap: break-word;
     text-align: center;
+  }
+
+  #admin-btn {
+    margin-left: 10px;
+    background-color: #666;
+  }
+
+  #admin-btn:hover {
+    background-color: #444;
+  }
+
+  #admin-area {
     margin-top: 10px;
-    font-style: italic;
-    color: #cc7a00;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  #adminArea {
-    max-width: 600px;
-    margin: 0 auto 30px auto;
     text-align: center;
+  }
+
+  #admin-unlock {
+    display: none;
+    margin-top: 10px;
+  }
+
+  #admin-unlock input {
+    padding: 5px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 2px solid #ccc;
+    width: 200px;
+  }
+
+  #admin-unlock button {
+    padding: 6px 12px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: none;
+    background-color: #444;
+    color: white;
+    margin-left: 5px;
+    cursor: pointer;
+  }
+
+  #admin-unlock button:hover {
+    background-color: #222;
+  }
+
+  /* Scrollbar styling for board */
+  #board::-webkit-scrollbar {
+    width: 8px;
+  }
+  #board::-webkit-scrollbar-thumb {
+    background: #ff9900;
+    border-radius: 4px;
   }
 </style>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
 </head>
 <body>
 
 <header>
-  Lotteria di fine anno dell'asilo di Mergozzo!!<br />
+  Lotteria di fine anno dell'asilo di Mergozzo!!  
   Scegli uno o più numeri, in palio tanti premi!!<br />
   Per ogni numero sono richiesti 2,50€ o un'offerta superiore da lasciare in busta chiusa nell'armadietto di Arianna F. ;) Grazie mille del tuo aiuto ;)
 </header>
 
-<div id="userInfo">
-  <input type="text" id="nome" placeholder="Nome" autocomplete="off" />
-  <input type="text" id="cognome" placeholder="Cognome" autocomplete="off" />
+<div id="form-area">
+  <input type="text" id="childName" placeholder="Nome e Cognome bambino/a" />
+  <button id="confirm-btn">Conferma scelta</button>
+  <button id="admin-btn">Admin</button>
+
+  <div id="admin-unlock">
+    <input type="password" id="admin-password" placeholder="Password Admin" />
+    <button id="unlock-btn">Sblocca</button>
+  </div>
 </div>
 
 <div id="board"></div>
 
-<div style="text-align:center;">
-  <button id="confirmBtn" disabled>Conferma Scelta</button>
-  <button id="adminBtn" style="display:none;">Area Admin</button>
-</div>
+<script type="module">
+// Import Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-<div id="message"></div>
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyAHpuw1hUg2x0U-ms8op-xw-bqUFjlU1r8",
+  authDomain: "lotteria-asilo.firebaseapp.com",
+  databaseURL: "https://lotteria-asilo-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "lotteria-asilo",
+  storageBucket: "lotteria-asilo.appspot.com",
+  messagingSenderId: "666992323953",
+  appId: "1:666992323953:web:e03ddbaeffa4991d15dad0",
+  measurementId: "G-PVZ1ZR0S28"
+};
 
-<div id="adminArea" style="display:none;">
-  <button id="unlockBtn">Sblocca Scelte</button>
-</div>
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-<script>
-  // --- CONFIGURAZIONE FIREBASE ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyAHpuw1hUg2x0U-ms8op-xw-bqUFjlU1r8",
-    authDomain: "lotteria-asilo.firebaseapp.com",
-    databaseURL: "https://lotteria-asilo-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "lotteria-asilo",
-    storageBucket: "lotteria-asilo.appspot.com",
-    messagingSenderId: "666992323953",
-    appId: "1:666992323953:web:e03ddbaeffa4991d15dad0",
-    measurementId: "G-PVZ1ZR0S28"
-  };
-  
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+const boardDiv = document.getElementById('board');
+const childNameInput = document.getElementById('childName');
+const confirmBtn = document.getElementById('confirm-btn');
+const adminBtn = document.getElementById('admin-btn');
+const adminUnlockDiv = document.getElementById('admin-unlock');
+const adminPasswordInput = document.getElementById('admin-password');
+const unlockBtn = document.getElementById('unlock-btn');
 
-  // Cambia qui se sei admin (per ora semplice flag)
-  const isAdmin = false; 
+let selectedNumbers = new Set();
+let isAdmin = false;
+let takenNumbers = {}; // numero: {name: "Nome Cognome"}
 
-  const board = document.getElementById('board');
-  const confirmBtn = document.getElementById('confirmBtn');
-  const adminBtn = document.getElementById('adminBtn');
-  const unlockBtn = document.getElementById('unlockBtn');
-  const message = document.getElementById('message');
-  const nomeInput = document.getElementById('nome');
-  const cognomeInput = document.getElementById('cognome');
-  const adminArea = document.getElementById('adminArea');
-
-  let selectedNumbers = [];
-  let confirmed = false;
-  let userName = '';
-  let userSurname = '';
-
-  // Crea la griglia numeri
-  function createBoard() {
-    for (let i = 1; i <= 90; i++) {
-      const numEl = document.createElement('div');
-      numEl.textContent = i;
-      numEl.classList.add('number');
-      numEl.dataset.num = i;
-      numEl.addEventListener('click', () => {
-        if (confirmed && !isAdmin) return;
-        toggleNumber(i, numEl);
-      });
-      board.appendChild(numEl);
-    }
+function createBoard() {
+  boardDiv.innerHTML = '';
+  for(let i=1; i<=90; i++) {
+    const cell = document.createElement('div');
+    cell.classList.add('cell');
+    cell.textContent = i;
+    cell.dataset.number = i;
+    cell.addEventListener('click', () => onCellClick(i, cell));
+    boardDiv.appendChild(cell);
   }
+}
 
-  function toggleNumber(num, element) {
-    const idx = selectedNumbers.indexOf(num);
-    if (idx === -1) {
-      selectedNumbers.push(num);
-      element.classList.add('selected');
+function onCellClick(number, cell) {
+  if (takenNumbers[number] && !isAdmin) return; // occupato e non admin, non selezionabile
+
+  if (selectedNumbers.has(number)) {
+    selectedNumbers.delete(number);
+    cell.classList.remove('selected');
+  } else {
+    selectedNumbers.add(number);
+    cell.classList.add('selected');
+  }
+}
+
+function updateBoard() {
+  // aggiorna ogni cella con stato preso, selezionato e nome bambino
+  for (const cell of boardDiv.children) {
+    const num = parseInt(cell.dataset.number);
+    if (takenNumbers[num]) {
+      cell.classList.add('taken');
+      cell.classList.remove('selected');
+      // mostra nome sotto numero
+      let label = cell.querySelector('.child-name');
+      if (!label) {
+        label = document.createElement('div');
+        label.className = 'child-name';
+        cell.appendChild(label);
+      }
+      label.textContent = takenNumbers[num].name;
     } else {
-      selectedNumbers.splice(idx, 1);
-      element.classList.remove('selected');
-    }
-    updateConfirmBtn();
-    message.textContent = '';
-  }
-
-  function updateConfirmBtn() {
-    const nomeVal = nomeInput.value.trim();
-    const cognomeVal = cognomeInput.value.trim();
-    const canConfirm = selectedNumbers.length > 0 && nomeVal !== '' && cognomeVal !== '' && !confirmed;
-    confirmBtn.disabled = !canConfirm;
-  }
-
-  nomeInput.addEventListener('input', updateConfirmBtn);
-  cognomeInput.addEventListener('input', updateConfirmBtn);
-
-  // Salva su Firebase
-  function saveSelection() {
-    userName = nomeInput.value.trim();
-    userSurname = cognomeInput.value.trim();
-    if (!userName || !userSurname) {
-      message.textContent = "Inserisci nome e cognome per confermare.";
-      return;
-    }
-    const dataToSave = {
-      numbers: selectedNumbers,
-      confirmed: true,
-      nome: userName,
-      cognome: userSurname,
-      timestamp: Date.now()
-    };
-    db.ref('selections').set(dataToSave);
-  }
-
-  function listenSelection() {
-    db.ref('selections').on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        confirmed = data.confirmed;
-        selectedNumbers = data.numbers || [];
-        userName = data.nome || '';
-        userSurname = data.cognome || '';
-        updateBoard();
-        updateConfirmBtn();
-
-        if (confirmed && !isAdmin) {
-          message.textContent = `Scelta confermata da ${userName} ${userSurname}. Non è più possibile modificare.`;
-          nomeInput.disabled = true;
-          cognomeInput.disabled = true;
-          confirmBtn.disabled = true;
-        } else {
-          message.textContent = '';
-          nomeInput.disabled = false;
-          cognomeInput.disabled = false;
-          confirmBtn.disabled = false;
-        }
+      cell.classList.remove('taken');
+      // rimuovi eventuale nome bambino
+      const label = cell.querySelector('.child-name');
+      if (label) label.remove();
+      // se selezionato nella sessione attuale
+      if (selectedNumbers.has(num)) {
+        cell.classList.add('selected');
       } else {
-        // Nessuna selezione ancora fatta
-        confirmed = false;
-        selectedNumbers = [];
-        userName = '';
-        userSurname = '';
-        updateBoard();
-        updateConfirmBtn();
-        message.textContent = '';
-        nomeInput.disabled = false;
-        cognomeInput.disabled = false;
-        confirmBtn.disabled = true;
+        cell.classList.remove('selected');
       }
-    });
+    }
+  }
+}
+
+function saveSelection(name, numbers) {
+  // Salva nel db Firebase: per ogni numero scelto setta {name: name}
+  const updates = {};
+  numbers.forEach(num => {
+    updates['numbers/' + num] = {name: name};
+  });
+  return update(ref(db), updates);
+}
+
+function loadTakenNumbers() {
+  const numbersRef = ref(db, 'numbers');
+  onValue(numbersRef, (snapshot) => {
+    takenNumbers = snapshot.val() || {};
+    // dopo aggiornamento dati, aggiorna board e deseleziona numeri già presi
+    // rimuovo selezioni che ora sono occupate
+    for (let num of selectedNumbers) {
+      if (takenNumbers[num]) selectedNumbers.delete(num);
+    }
+    updateBoard();
+  });
+}
+
+confirmBtn.addEventListener('click', async () => {
+  const name = childNameInput.value.trim();
+  if (!name) {
+    alert('Inserisci nome e cognome del bambino/a prima di confermare');
+    return;
+  }
+  if (selectedNumbers.size === 0) {
+    alert('Seleziona almeno un numero prima di confermare');
+    return;
   }
 
-  function updateBoard() {
-    document.querySelectorAll('.number').forEach(el => {
-      const num = Number(el.dataset.num);
-      el.classList.remove('selected', 'disabled');
-      if (selectedNumbers.includes(num)) {
-        el.classList.add('selected');
-      }
-      if (confirmed && !isAdmin) {
-        el.classList.add('disabled');
-      }
-    });
-  }
-
-  confirmBtn.addEventListener('click', () => {
-    if (selectedNumbers.length === 0) {
-      message.textContent = "Seleziona almeno un numero prima di confermare.";
+  // Verifica che i numeri selezionati non siano già presi (in caso di ritardo sincronizzazione)
+  for (let num of selectedNumbers) {
+    if (takenNumbers[num]) {
+      alert(`Il numero ${num} è già stato scelto da un altro genitore. Rimuovilo e riprova.`);
       return;
     }
-    if (!nomeInput.value.trim() || !cognomeInput.value.trim()) {
-      message.textContent = "Inserisci nome e cognome per confermare.";
-      return;
-    }
-    saveSelection();
-  });
-
-  // Admin area
-  if (isAdmin) {
-    adminBtn.style.display = 'inline-block';
-    adminArea.style.display = 'block';
   }
 
-  adminBtn.addEventListener('click', () => {
-    alert('Zona admin da implementare o aprire altra pagina.');
-  });
+  try {
+    await saveSelection(name, selectedNumbers);
+    alert(`Scelta confermata per ${name}. Puoi scegliere altri numeri se vuoi.`);
+    selectedNumbers.clear();
+    childNameInput.value = '';
+  } catch (e) {
+    alert('Errore nel salvataggio, riprova.');
+  }
+});
 
-  unlockBtn.addEventListener('click', () => {
-    if (confirm('Sei sicuro di voler sbloccare la selezione? Tutte le scelte attuali saranno cancellate.')) {
-      db.ref('selections').remove();
-      message.textContent = "Scelte sbloccate. I genitori possono scegliere di nuovo.";
-      nomeInput.disabled = false;
-      cognomeInput.disabled = false;
-      confirmBtn.disabled = true;
-    }
-  });
+adminBtn.addEventListener('click', () => {
+  adminUnlockDiv.style.display = adminUnlockDiv.style.display === 'none' ? 'block' : 'none';
+});
 
-  // Avvio
-  createBoard();
-  listenSelection();
-  updateConfirmBtn();
+unlockBtn.addEventListener('click', () => {
+  const pwd = adminPasswordInput.value;
+  if (pwd === 'mergozzo2025') {
+    isAdmin = true;
+    adminUnlockDiv.style.display = 'none';
+    adminPasswordInput.value = '';
+    alert('Accesso admin abilitato. Ora puoi deselezionare numeri già confermati.');
+  } else {
+    alert('Password admin errata.');
+  }
+});
+
+// Se admin, permetti di deselezionare numeri già presi
+boardDiv.addEventListener('click', e => {
+  if (!isAdmin) return;
+  const cell = e.target.closest('.cell');
+  if (!cell) return;
+  const num = parseInt(cell.dataset.number);
+  if (takenNumbers[num]) {
+    // Rimuovo il numero dal db
+    set(ref(db, 'numbers/' + num), null);
+  }
+});
+
+createBoard();
+loadTakenNumbers();
 
 </script>
-
 </body>
 </html>
