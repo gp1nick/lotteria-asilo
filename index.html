@@ -78,15 +78,16 @@
     border: 2px solid #ccc;
     border-radius: 6px;
     text-align: center;
-    font-size: calc(1.5vw + 1.5vh);
     cursor: pointer;
     user-select: none;
     position: relative;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 8vh;
     transition: background-color 0.3s, border-color 0.3s;
+    padding: 4px 2px;
   }
 
   .cell.selected {
@@ -102,14 +103,29 @@
     cursor: not-allowed;
   }
 
+  .number {
+    font-size: 1.8em;
+    line-height: 1;
+    flex: 1 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
   .child-name {
-    position: absolute;
-    bottom: 2px;
-    font-size: 0.7em;
-    color: #333;
-    width: 90%;
+    font-size: 1.1em;
+    line-height: 1.1;
+    margin-top: 2px;
+    max-height: 3em;
     overflow-wrap: break-word;
+    word-break: break-word;
+    width: 100%;
+    flex: 1 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     text-align: center;
+    padding: 0 2px;
   }
 
   #admin-btn {
@@ -154,6 +170,29 @@
     background-color: #222;
   }
 
+  #admin-logout-btn {
+    display: none;
+    margin-left: 10px;
+    background-color: #900;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  #admin-logout-btn:hover {
+    background-color: #700;
+  }
+
+  #message {
+    margin-top: 8px;
+    font-weight: bold;
+    min-height: 20px;
+    color: #006600;
+  }
+
   /* Scrollbar styling for board */
   #board::-webkit-scrollbar {
     width: 8px;
@@ -161,6 +200,38 @@
   #board::-webkit-scrollbar-thumb {
     background: #ff9900;
     border-radius: 4px;
+  }
+
+  /* Print styles */
+  @media print {
+    body {
+      background: white;
+      color: black;
+      overflow: visible !important;
+      height: auto !important;
+    }
+    #form-area, header, #admin-btn, #admin-unlock, #admin-logout-btn, #message {
+      display: none !important;
+    }
+    #board {
+      width: 100%;
+      max-height: none;
+      grid-gap: 4px;
+      padding: 0;
+    }
+    .cell {
+      border: 1px solid black !important;
+      height: 25mm !important;
+      font-size: 14pt !important;
+      padding: 2mm !important;
+    }
+    .child-name {
+      font-size: 10pt !important;
+    }
+    @page {
+      size: A4 landscape;
+      margin: 5mm;
+    }
   }
 </style>
 </head>
@@ -173,22 +244,24 @@
 </header>
 
 <div id="form-area">
-  <input type="text" id="childName" placeholder="Nome e Cognome bambino/a" />
+  <input type="text" id="childName" placeholder="Nome e Cognome bambino/a" autocomplete="off"/>
   <button id="confirm-btn">Conferma scelta</button>
   <button id="admin-btn">Admin</button>
+  <button id="admin-logout-btn">Logout Admin</button>
 
   <div id="admin-unlock">
-    <input type="password" id="admin-password" placeholder="Password Admin" />
+    <input type="password" id="admin-password" placeholder="Password Admin" autocomplete="off"/>
     <button id="unlock-btn">Sblocca</button>
   </div>
+  <div id="message"></div>
 </div>
 
 <div id="board"></div>
 
 <script type="module">
-// Import Firebase SDK
+// Firebase SDK imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -212,25 +285,36 @@ const adminBtn = document.getElementById('admin-btn');
 const adminUnlockDiv = document.getElementById('admin-unlock');
 const adminPasswordInput = document.getElementById('admin-password');
 const unlockBtn = document.getElementById('unlock-btn');
+const adminLogoutBtn = document.getElementById('admin-logout-btn');
+const messageDiv = document.getElementById('message');
 
 let selectedNumbers = new Set();
 let isAdmin = false;
-let takenNumbers = {}; // numero: {name: "Nome Cognome"}
+let takenNumbers = {}; // {num: {name:""}}
+
+const ADMIN_PASSWORD = "asilo2025";
 
 function createBoard() {
   boardDiv.innerHTML = '';
-  for(let i=1; i<=90; i++) {
+  for(let i=1; i<=180; i++) {
     const cell = document.createElement('div');
     cell.classList.add('cell');
-    cell.textContent = i;
     cell.dataset.number = i;
-    cell.addEventListener('click', () => onCellClick(i, cell));
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'number';
+    numDiv.textContent = i;
+
+    cell.appendChild(numDiv);
+
     boardDiv.appendChild(cell);
+
+    cell.addEventListener('click', () => onCellClick(i, cell));
   }
 }
 
 function onCellClick(number, cell) {
-  if (takenNumbers[number] && !isAdmin) return; // occupato e non admin, non selezionabile
+  if (takenNumbers[number] && !isAdmin) return; // occupato e non admin, blocca
 
   if (selectedNumbers.has(number)) {
     selectedNumbers.delete(number);
@@ -242,13 +326,11 @@ function onCellClick(number, cell) {
 }
 
 function updateBoard() {
-  // aggiorna ogni cella con stato preso, selezionato e nome bambino
   for (const cell of boardDiv.children) {
     const num = parseInt(cell.dataset.number);
     if (takenNumbers[num]) {
       cell.classList.add('taken');
       cell.classList.remove('selected');
-      // mostra nome sotto numero
       let label = cell.querySelector('.child-name');
       if (!label) {
         label = document.createElement('div');
@@ -258,101 +340,119 @@ function updateBoard() {
       label.textContent = takenNumbers[num].name;
     } else {
       cell.classList.remove('taken');
-      // rimuovi eventuale nome bambino
-      const label = cell.querySelector('.child-name');
-      if (label) label.remove();
-      // se selezionato nella sessione attuale
       if (selectedNumbers.has(num)) {
         cell.classList.add('selected');
       } else {
         cell.classList.remove('selected');
       }
+      const label = cell.querySelector('.child-name');
+      if (label) label.remove();
     }
   }
 }
 
-function saveSelection(name, numbers) {
-  // Salva nel db Firebase: per ogni numero scelto setta {name: name}
-  const updates = {};
-  numbers.forEach(num => {
-    updates['numbers/' + num] = {name: name};
-  });
-  return update(ref(db), updates);
-}
+// Listener Firebase database aggiornamenti in tempo reale
+const dbRef = ref(db, 'prenotazioni/');
+onValue(dbRef, (snapshot) => {
+  const data = snapshot.val() || {};
+  takenNumbers = data;
+  // Deseleziona numeri occupati
+  for (const n of selectedNumbers) {
+    if (takenNumbers[n]) selectedNumbers.delete(n);
+  }
+  updateBoard();
+});
 
-function loadTakenNumbers() {
-  const numbersRef = ref(db, 'numbers');
-  onValue(numbersRef, (snapshot) => {
-    takenNumbers = snapshot.val() || {};
-    // dopo aggiornamento dati, aggiorna board e deseleziona numeri già presi
-    // rimuovo selezioni che ora sono occupate
-    for (let num of selectedNumbers) {
-      if (takenNumbers[num]) selectedNumbers.delete(num);
-    }
-    updateBoard();
-  });
-}
-
-confirmBtn.addEventListener('click', async () => {
+confirmBtn.addEventListener('click', () => {
+  messageDiv.textContent = '';
   const name = childNameInput.value.trim();
   if (!name) {
-    alert('Inserisci nome e cognome del bambino/a prima di confermare');
+    alert("Inserisci il nome e cognome del bambino/a!");
     return;
   }
   if (selectedNumbers.size === 0) {
-    alert('Seleziona almeno un numero prima di confermare');
+    alert("Seleziona almeno un numero!");
     return;
   }
 
-  // Verifica che i numeri selezionati non siano già presi (in caso di ritardo sincronizzazione)
-  for (let num of selectedNumbers) {
-    if (takenNumbers[num]) {
-      alert(`Il numero ${num} è già stato scelto da un altro genitore. Rimuovilo e riprova.`);
+  // Verifica che nessun numero selezionato sia già preso (sincronizzazione)
+  for (const n of selectedNumbers) {
+    if (takenNumbers[n]) {
+      alert(`Il numero ${n} è già prenotato, deselezionalo.`);
       return;
     }
   }
 
-  try {
-    await saveSelection(name, selectedNumbers);
-    alert(`Scelta confermata per ${name}. Puoi scegliere altri numeri se vuoi.`);
-    selectedNumbers.clear();
-    childNameInput.value = '';
-  } catch (e) {
-    alert('Errore nel salvataggio, riprova.');
+  // Scrivi in Firebase tutte le nuove prenotazioni
+  let updates = {};
+  for (const n of selectedNumbers) {
+    updates['prenotazioni/' + n] = { name };
   }
+  update(ref(db), updates)
+    .then(() => {
+      messageDiv.style.color = "#006600";
+      messageDiv.textContent = "Grazie, la tua prenotazione è stata registrata con successo!";
+      selectedNumbers.clear();
+      childNameInput.value = "";
+    })
+    .catch(err => {
+      messageDiv.style.color = "red";
+      messageDiv.textContent = "Errore durante la registrazione, riprova.";
+      console.error(err);
+    });
 });
 
 adminBtn.addEventListener('click', () => {
-  adminUnlockDiv.style.display = adminUnlockDiv.style.display === 'none' ? 'block' : 'none';
+  adminUnlockDiv.style.display = 'block';
+  adminPasswordInput.focus();
 });
 
 unlockBtn.addEventListener('click', () => {
-  const pwd = adminPasswordInput.value;
-  if (pwd === 'mergozzo2025') {
+  if (adminPasswordInput.value === ADMIN_PASSWORD) {
     isAdmin = true;
     adminUnlockDiv.style.display = 'none';
-    adminPasswordInput.value = '';
-    alert('Accesso admin abilitato. Ora puoi deselezionare numeri già confermati.');
+    adminLogoutBtn.style.display = 'inline-block';
+    adminBtn.style.display = 'none';
+    messageDiv.style.color = "blue";
+    messageDiv.textContent = "Modalità Admin attivata: clicca su un numero preso per eliminarlo.";
   } else {
-    alert('Password admin errata.');
+    alert("Password Admin errata!");
   }
+  adminPasswordInput.value = "";
 });
 
-// Se admin, permetti di deselezionare numeri già presi
-boardDiv.addEventListener('click', e => {
+adminLogoutBtn.addEventListener('click', () => {
+  isAdmin = false;
+  adminLogoutBtn.style.display = 'none';
+  adminBtn.style.display = 'inline-block';
+  messageDiv.textContent = "";
+});
+
+boardDiv.addEventListener('click', async (e) => {
   if (!isAdmin) return;
+
   const cell = e.target.closest('.cell');
   if (!cell) return;
+
   const num = parseInt(cell.dataset.number);
-  if (takenNumbers[num]) {
-    // Rimuovo il numero dal db
-    set(ref(db, 'numbers/' + num), null);
+  if (!takenNumbers[num]) return; // numero libero, niente da fare
+
+  const conferma = confirm(`Sei sicuro di voler rimuovere la prenotazione del numero ${num} per "${takenNumbers[num].name}"?`);
+  if (!conferma) return;
+
+  try {
+    const numRef = ref(db, 'numbers/' + num);
+    await set(numRef, null); // elimina la prenotazione
+    alert(`Prenotazione numero ${num} rimossa.`);
+  } catch (error) {
+    alert('Errore nella rimozione della prenotazione. Riprova.');
   }
 });
 
+// Inizializza
 createBoard();
-loadTakenNumbers();
-
+updateBoard();
 </script>
+
 </body>
 </html>
