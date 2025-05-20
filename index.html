@@ -3,356 +3,166 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lotteria Asilo Mergozzo</title>
+<title>Lotteria Asilo</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
-
   body {
-    font-family: 'Comic Neue', cursive, sans-serif;
-    margin: 0; padding: 0; background: #f9f6f2;
-    display: flex; flex-direction: column; align-items: center;
-    min-height: 100vh;
-    height: 100vh;
-    overflow: hidden;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 600px;
+    margin: auto;
   }
-
-  header {
-    background: #ffcc00;
-    width: 100%; padding: 15px;
+  h1 {
     text-align: center;
-    font-size: 1.2em;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    flex-shrink: 0;
   }
-
-  #form-area {
-    width: 100%;
-    max-width: 700px;
-    padding: 10px 20px;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-top: 10px;
-    border-radius: 8px;
-  }
-
-  #form-area input[type="text"] {
-    font-size: 1em;
+  #parentName {
+    display: block;
+    margin: 10px auto 20px auto;
     padding: 8px;
-    margin-right: 10px;
-    width: 60%;
-    border: 2px solid #ccc;
-    border-radius: 5px;
+    font-size: 1.1em;
+    width: 100%;
+    max-width: 300px;
   }
-
-  #form-area button {
-    font-size: 1em;
-    padding: 8px 15px;
-    cursor: pointer;
-    border-radius: 5px;
-    border: none;
-    background-color: #ff9900;
-    color: white;
-    transition: background-color 0.3s;
-  }
-  #form-area button:hover {
-    background-color: #e68a00;
-  }
-
-  #board {
+  #numberGrid {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    grid-gap: 6px;
-    width: 100vw;
-    flex-grow: 1;
-    max-height: calc(100vh - 190px);
-    padding: 10px;
-    box-sizing: border-box;
-    overflow-y: auto;
+    gap: 6px;
   }
-
-  .cell {
-    background: #eee;
-    border: 2px solid #ccc;
-    border-radius: 6px;
+  .number {
+    border: 1px solid #888;
+    padding: 10px 0;
     text-align: center;
-    font-size: calc(1.5vw + 1.5vh);
     cursor: pointer;
     user-select: none;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 8vh;
-    transition: background-color 0.3s, border-color 0.3s;
-  }
-
-  .cell.selected {
-    background-color: #ffd966;
-    border-color: #ff9900;
     font-weight: bold;
-  }
-
-  .cell.taken {
-    background-color: #bbb;
-    border-color: #666;
-    color: #333;
-    cursor: not-allowed;
-  }
-
-  .child-name {
-    position: absolute;
-    bottom: 2px;
-    font-size: 0.7em;
-    color: #333;
-    width: 90%;
-    overflow-wrap: break-word;
-    text-align: center;
-  }
-
-  #admin-btn {
-    margin-left: 10px;
-    background-color: #666;
-  }
-
-  #admin-btn:hover {
-    background-color: #444;
-  }
-
-  #admin-area {
-    margin-top: 10px;
-    text-align: center;
-  }
-
-  #admin-unlock {
-    display: none;
-    margin-top: 10px;
-  }
-
-  #admin-unlock input {
-    padding: 5px;
-    font-size: 1em;
-    border-radius: 5px;
-    border: 2px solid #ccc;
-    width: 200px;
-  }
-
-  #admin-unlock button {
-    padding: 6px 12px;
-    font-size: 1em;
-    border-radius: 5px;
-    border: none;
-    background-color: #444;
-    color: white;
-    margin-left: 5px;
-    cursor: pointer;
-  }
-
-  #admin-unlock button:hover {
-    background-color: #222;
-  }
-
-  /* Scrollbar styling for board */
-  #board::-webkit-scrollbar {
-    width: 8px;
-  }
-  #board::-webkit-scrollbar-thumb {
-    background: #ff9900;
     border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .number:hover:not(.reserved):not(.selected) {
+    background-color: #def;
+  }
+  .reserved {
+    background-color: #f66;
+    color: white;
+    cursor: default;
+  }
+  .selected {
+    background-color: #6c6;
+    color: white;
+  }
+  button {
+    margin-top: 20px;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    font-size: 1.2em;
+    cursor: pointer;
+    border: none;
+    background-color: #2874A6;
+    color: white;
+    border-radius: 5px;
+  }
+  #message {
+    margin-top: 20px;
+    font-weight: bold;
+    text-align: center;
+    min-height: 1.2em;
   }
 </style>
 </head>
 <body>
+<h1>Lotteria Asilo - Scegli i tuoi numeri</h1>
+<input type="text" id="parentName" placeholder="Inserisci il tuo nome" />
 
-<header>
-  Lotteria di fine anno dell'asilo di Mergozzo!!  
-  Scegli uno o più numeri, in palio tanti premi!!<br />
-  Per ogni numero sono richiesti 2,50€ o un'offerta superiore da lasciare in busta chiusa nell'armadietto di Arianna F. ;) Grazie mille del tuo aiuto ;)
-</header>
+<div id="numberGrid"></div>
 
-<div id="form-area">
-  <input type="text" id="childName" placeholder="Nome e Cognome bambino/a" />
-  <button id="confirm-btn">Conferma scelta</button>
-  <button id="admin-btn">Admin</button>
+<button onclick="confirmSelection()">Conferma scelta</button>
+<p id="message"></p>
 
-  <div id="admin-unlock">
-    <input type="password" id="admin-password" placeholder="Password Admin" />
-    <button id="unlock-btn">Sblocca</button>
-  </div>
-</div>
+<script>
+  const PROXY_URL = "https://corsproxy.io/?";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyNRy0PNmPJr3NkrHfGgpnAVpQ7Sm4pLmq87NcWZxlsKIzsXE9X96eosde-6LV9ITw/exec";
 
-<div id="board"></div>
+  const grid = document.getElementById('numberGrid');
+  const message = document.getElementById('message');
+  let selectedNumbers = [];
+  let reservations = {};
 
-<script type="module">
-// Import Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyAHpuw1hUg2x0U-ms8op-xw-bqUFjlU1r8",
-  authDomain: "lotteria-asilo.firebaseapp.com",
-  databaseURL: "https://lotteria-asilo-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "lotteria-asilo",
-  storageBucket: "lotteria-asilo.appspot.com",
-  messagingSenderId: "666992323953",
-  appId: "1:666992323953:web:e03ddbaeffa4991d15dad0",
-  measurementId: "G-PVZ1ZR0S28"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-const boardDiv = document.getElementById('board');
-const childNameInput = document.getElementById('childName');
-const confirmBtn = document.getElementById('confirm-btn');
-const adminBtn = document.getElementById('admin-btn');
-const adminUnlockDiv = document.getElementById('admin-unlock');
-const adminPasswordInput = document.getElementById('admin-password');
-const unlockBtn = document.getElementById('unlock-btn');
-
-let selectedNumbers = new Set();
-let isAdmin = false;
-let takenNumbers = {}; // numero: {name: "Nome Cognome"}
-
-function createBoard() {
-  boardDiv.innerHTML = '';
-  for(let i=1; i<=90; i++) {
-    const cell = document.createElement('div');
-    cell.classList.add('cell');
-    cell.textContent = i;
-    cell.dataset.number = i;
-    cell.addEventListener('click', () => onCellClick(i, cell));
-    boardDiv.appendChild(cell);
+  async function loadReservations() {
+    try {
+      const response = await fetch(PROXY_URL + encodeURIComponent(SCRIPT_URL));
+      reservations = await response.json();
+      renderGrid();
+    } catch (error) {
+      console.error('Errore caricamento prenotazioni:', error);
+      message.textContent = "Errore nel caricamento dati, riprova più tardi.";
+    }
   }
-}
 
-function onCellClick(number, cell) {
-  if (takenNumbers[number] && !isAdmin) return; // occupato e non admin, non selezionabile
-
-  if (selectedNumbers.has(number)) {
-    selectedNumbers.delete(number);
-    cell.classList.remove('selected');
-  } else {
-    selectedNumbers.add(number);
-    cell.classList.add('selected');
-  }
-}
-
-function updateBoard() {
-  // aggiorna ogni cella con stato preso, selezionato e nome bambino
-  for (const cell of boardDiv.children) {
-    const num = parseInt(cell.dataset.number);
-    if (takenNumbers[num]) {
-      cell.classList.add('taken');
-      cell.classList.remove('selected');
-      // mostra nome sotto numero
-      let label = cell.querySelector('.child-name');
-      if (!label) {
-        label = document.createElement('div');
-        label.className = 'child-name';
-        cell.appendChild(label);
-      }
-      label.textContent = takenNumbers[num].name;
-    } else {
-      cell.classList.remove('taken');
-      // rimuovi eventuale nome bambino
-      const label = cell.querySelector('.child-name');
-      if (label) label.remove();
-      // se selezionato nella sessione attuale
-      if (selectedNumbers.has(num)) {
-        cell.classList.add('selected');
+  function renderGrid() {
+    grid.innerHTML = '';
+    for (let i = 1; i <= 90; i++) {
+      const numberDiv = document.createElement('div');
+      numberDiv.className = 'number';
+      if (reservations[i]) {
+        numberDiv.classList.add('reserved');
+        numberDiv.textContent = i + " → " + reservations[i];
+        numberDiv.title = `Prenotato da ${reservations[i]}`;
       } else {
-        cell.classList.remove('selected');
+        numberDiv.textContent = i;
+        numberDiv.onclick = () => toggleSelectNumber(i, numberDiv);
+        if (selectedNumbers.includes(i)) {
+          numberDiv.classList.add('selected');
+        }
       }
+      grid.appendChild(numberDiv);
     }
   }
-}
 
-function saveSelection(name, numbers) {
-  // Salva nel db Firebase: per ogni numero scelto setta {name: name}
-  const updates = {};
-  numbers.forEach(num => {
-    updates['numbers/' + num] = {name: name};
-  });
-  return update(ref(db), updates);
-}
-
-function loadTakenNumbers() {
-  const numbersRef = ref(db, 'numbers');
-  onValue(numbersRef, (snapshot) => {
-    takenNumbers = snapshot.val() || {};
-    // dopo aggiornamento dati, aggiorna board e deseleziona numeri già presi
-    // rimuovo selezioni che ora sono occupate
-    for (let num of selectedNumbers) {
-      if (takenNumbers[num]) selectedNumbers.delete(num);
+  function toggleSelectNumber(number, element) {
+    if (selectedNumbers.includes(number)) {
+      selectedNumbers = selectedNumbers.filter(n => n !== number);
+      element.classList.remove('selected');
+    } else if (!reservations[number]) {
+      selectedNumbers.push(number);
+      element.classList.add('selected');
     }
-    updateBoard();
-  });
-}
-
-confirmBtn.addEventListener('click', async () => {
-  const name = childNameInput.value.trim();
-  if (!name) {
-    alert('Inserisci nome e cognome del bambino/a prima di confermare');
-    return;
-  }
-  if (selectedNumbers.size === 0) {
-    alert('Seleziona almeno un numero prima di confermare');
-    return;
   }
 
-  // Verifica che i numeri selezionati non siano già presi (in caso di ritardo sincronizzazione)
-  for (let num of selectedNumbers) {
-    if (takenNumbers[num]) {
-      alert(`Il numero ${num} è già stato scelto da un altro genitore. Rimuovilo e riprova.`);
+  async function confirmSelection() {
+    const name = document.getElementById('parentName').value.trim();
+    if (!name) {
+      alert('Inserisci il tuo nome!');
       return;
     }
+    if (selectedNumbers.length === 0) {
+      alert('Seleziona almeno un numero!');
+      return;
+    }
+    try {
+      const response = await fetch(PROXY_URL + encodeURIComponent(SCRIPT_URL), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, numbers: selectedNumbers })
+      });
+      const result = await response.text();
+
+      if (result === 'Success') {
+        selectedNumbers.forEach(num => {
+          reservations[num] = name;
+        });
+        message.textContent = `${name}, hai scelto i numeri: ${selectedNumbers.join(', ')}`;
+        selectedNumbers = [];
+        renderGrid();
+      } else {
+        alert(result);
+      }
+    } catch (error) {
+      alert('Errore nella comunicazione con il server: ' + error);
+    }
   }
 
-  try {
-    await saveSelection(name, selectedNumbers);
-    alert(`Scelta confermata per ${name}. Puoi scegliere altri numeri se vuoi.`);
-    selectedNumbers.clear();
-    childNameInput.value = '';
-  } catch (e) {
-    alert('Errore nel salvataggio, riprova.');
-  }
-});
-
-adminBtn.addEventListener('click', () => {
-  adminUnlockDiv.style.display = adminUnlockDiv.style.display === 'none' ? 'block' : 'none';
-});
-
-unlockBtn.addEventListener('click', () => {
-  const pwd = adminPasswordInput.value;
-  if (pwd === 'mergozzo2025') {
-    isAdmin = true;
-    adminUnlockDiv.style.display = 'none';
-    adminPasswordInput.value = '';
-    alert('Accesso admin abilitato. Ora puoi deselezionare numeri già confermati.');
-  } else {
-    alert('Password admin errata.');
-  }
-});
-
-// Se admin, permetti di deselezionare numeri già presi
-boardDiv.addEventListener('click', e => {
-  if (!isAdmin) return;
-  const cell = e.target.closest('.cell');
-  if (!cell) return;
-  const num = parseInt(cell.dataset.number);
-  if (takenNumbers[num]) {
-    // Rimuovo il numero dal db
-    set(ref(db, 'numbers/' + num), null);
-  }
-});
-
-createBoard();
-loadTakenNumbers();
-
+  loadReservations();
 </script>
 </body>
 </html>
